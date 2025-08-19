@@ -1,6 +1,22 @@
+# =============================================================================
+# LOCAL VALUES
+# =============================================================================
+
 locals {
   cluster-name = var.cluster-name
+
+  # Common tags to be assigned to all resources
+  common_tags = {
+    Environment                                   = var.env
+    Project                                       = "EKS-Cluster"
+    ManagedBy                                     = "Terraform"
+    "kubernetes.io/cluster/${local.cluster-name}" = "owned"
+  }
 }
+
+# =============================================================================
+# VPC
+# =============================================================================
 
 resource "aws_vpc" "vpc" {
   cidr_block           = var.cidr-block
@@ -8,24 +24,28 @@ resource "aws_vpc" "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.vpc-name
-    Env  = var.env
-
-  }
+  })
 }
+
+# =============================================================================
+# INTERNET GATEWAY
+# =============================================================================
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 
-  tags = {
-    Name                                          = var.igw-name
-    env                                           = var.env
-    "kubernetes.io/cluster/${local.cluster-name}" = "owned"
-  }
+  tags = merge(local.common_tags, {
+    Name = var.igw-name
+  })
 
   depends_on = [aws_vpc.vpc]
 }
+
+# =============================================================================
+# PUBLIC SUBNETS
+# =============================================================================
 
 resource "aws_subnet" "public-subnet" {
   count                   = var.pub-subnet-count
@@ -34,16 +54,18 @@ resource "aws_subnet" "public-subnet" {
   availability_zone       = element(var.pub-availability-zone, count.index)
   map_public_ip_on_launch = true
 
-  tags = {
-    Name                                          = "${var.pub-sub-name}-${count.index + 1}"
-    Env                                           = var.env
-    "kubernetes.io/cluster/${local.cluster-name}" = "owned"
-    "kubernetes.io/role/elb"                      = "1"
-  }
+  tags = merge(local.common_tags, {
+    Name                     = "${var.pub-sub-name}-${count.index + 1}"
+    Type                     = "Public"
+    "kubernetes.io/role/elb" = "1"
+  })
 
-  depends_on = [aws_vpc.vpc,
-  ]
+  depends_on = [aws_vpc.vpc]
 }
+
+# =============================================================================
+# PRIVATE SUBNETS
+# =============================================================================
 
 resource "aws_subnet" "private-subnet" {
   count                   = var.pri-subnet-count
@@ -52,17 +74,18 @@ resource "aws_subnet" "private-subnet" {
   availability_zone       = element(var.pri-availability-zone, count.index)
   map_public_ip_on_launch = false
 
-  tags = {
-    Name                                          = "${var.pri-sub-name}-${count.index + 1}"
-    Env                                           = var.env
-    "kubernetes.io/cluster/${local.cluster-name}" = "owned"
-    "kubernetes.io/role/internal-elb"             = "1"
-  }
+  tags = merge(local.common_tags, {
+    Name                              = "${var.pri-sub-name}-${count.index + 1}"
+    Type                              = "Private"
+    "kubernetes.io/role/internal-elb" = "1"
+  })
 
-  depends_on = [aws_vpc.vpc,
-  ]
+  depends_on = [aws_vpc.vpc]
 }
 
+# =============================================================================
+# PUBLIC ROUTE TABLE
+# =============================================================================
 
 resource "aws_route_table" "public-rt" {
   vpc_id = aws_vpc.vpc.id
@@ -72,49 +95,66 @@ resource "aws_route_table" "public-rt" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.public-rt-name
-    env  = var.env
-  }
+    Type = "Public"
+  })
 
-  depends_on = [aws_vpc.vpc
-  ]
+  depends_on = [aws_vpc.vpc, aws_internet_gateway.igw]
 }
 
-resource "aws_route_table_association" "name" {
-  count          = 3
+# =============================================================================
+# PUBLIC ROUTE TABLE ASSOCIATIONS
+# =============================================================================
+
+resource "aws_route_table_association" "public-rt-association" {
+  count          = var.pub-subnet-count # Fixed: Use variable instead of hardcoded value
   route_table_id = aws_route_table.public-rt.id
   subnet_id      = aws_subnet.public-subnet[count.index].id
 
-  depends_on = [aws_vpc.vpc,
-    aws_subnet.public-subnet
+  depends_on = [
+    aws_vpc.vpc,
+    aws_subnet.public-subnet,
+    aws_route_table.public-rt
   ]
 }
+
+# =============================================================================
+# ELASTIC IP FOR NAT GATEWAY
+# =============================================================================
 
 resource "aws_eip" "ngw-eip" {
   domain = "vpc"
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.eip-name
-  }
+  })
 
-  depends_on = [aws_vpc.vpc
-  ]
-
+  depends_on = [aws_internet_gateway.igw]
 }
+
+# =============================================================================
+# NAT GATEWAY
+# =============================================================================
 
 resource "aws_nat_gateway" "ngw" {
   allocation_id = aws_eip.ngw-eip.id
   subnet_id     = aws_subnet.public-subnet[0].id
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.ngw-name
-  }
+  })
 
-  depends_on = [aws_vpc.vpc,
-    aws_eip.ngw-eip
+  depends_on = [
+    aws_vpc.vpc,
+    aws_eip.ngw-eip,
+    aws_subnet.public-subnet
   ]
 }
+
+# =============================================================================
+# PRIVATE ROUTE TABLE
+# =============================================================================
 
 resource "aws_route_table" "private-rt" {
   vpc_id = aws_vpc.vpc.id
@@ -124,46 +164,63 @@ resource "aws_route_table" "private-rt" {
     nat_gateway_id = aws_nat_gateway.ngw.id
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.private-rt-name
-    env  = var.env
-  }
+    Type = "Private"
+  })
 
-  depends_on = [aws_vpc.vpc,
-  ]
+  depends_on = [aws_vpc.vpc, aws_nat_gateway.ngw]
 }
 
+# =============================================================================
+# PRIVATE ROUTE TABLE ASSOCIATIONS
+# =============================================================================
+
 resource "aws_route_table_association" "private-rt-association" {
-  count          = 3
+  count          = var.pri-subnet-count # Fixed: Use variable instead of hardcoded value
   route_table_id = aws_route_table.private-rt.id
   subnet_id      = aws_subnet.private-subnet[count.index].id
 
-  depends_on = [aws_vpc.vpc,
-    aws_subnet.private-subnet
+  depends_on = [
+    aws_vpc.vpc,
+    aws_subnet.private-subnet,
+    aws_route_table.private-rt
   ]
 }
 
+# =============================================================================
+# SECURITY GROUP FOR EKS CLUSTER
+# =============================================================================
+
 resource "aws_security_group" "eks-cluster-sg" {
-  name        = var.eks-sg
-  description = "Allow 443 from Jump Server only"
+  name_prefix = "${var.eks-sg}-" # Use name_prefix for uniqueness
+  description = "Security group for EKS cluster control plane"
+  vpc_id      = aws_vpc.vpc.id
 
-  vpc_id = aws_vpc.vpc.id
-
+  # HTTPS access for EKS API server
   ingress {
+    description = "HTTPS access to EKS API server"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] // It should be specific IP range
+    # SECURITY IMPROVEMENT: Restrict to specific CIDR blocks
+    # Replace with your organization's IP ranges or VPC CIDR
+    cidr_blocks = [var.cidr-block] # Only allow access from within VPC
   }
 
+  # Allow all outbound traffic
   egress {
+    description = "All outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
+  tags = merge(local.common_tags, {
     Name = var.eks-sg
-  }
+  })
+
+  # Ensure VPC is created first
+  depends_on = [aws_vpc.vpc]
 }

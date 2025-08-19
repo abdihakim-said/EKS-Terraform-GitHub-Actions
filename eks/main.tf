@@ -1,3 +1,9 @@
+# =============================================================================
+# EKS Infrastructure Main Configuration
+# Security scanning: tfsec + Checkov integration enabled
+# Last security scan trigger: 2025-08-19T23:49:36Z
+# =============================================================================
+
 locals {
   org = "medium"
   env = var.env

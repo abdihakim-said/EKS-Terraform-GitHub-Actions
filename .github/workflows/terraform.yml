@@ -160,14 +160,21 @@ jobs:
           echo "Contents of sarif-upload directory:"
           ls -la sarif-upload/
 
-      - name: '📊 Upload Security Scan Results'
+      - name: '📊 Upload tfsec Security Scan Results'
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: |
-            ${{ github.workspace }}/sarif-upload/tfsec-results.sarif
-            ${{ github.workspace }}/sarif-upload/checkov-results.sarif
-          category: 'terraform-security'
+          sarif_file: sarif-upload/tfsec-results.sarif
+          category: 'terraform-security-tfsec'
+          checkout_path: ${{ github.workspace }}
+
+      - name: '📊 Upload Checkov Security Scan Results'
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif-upload/checkov-results.sarif
+          category: 'terraform-security-checkov'
+          checkout_path: ${{ github.workspace }}
 
       - name: '📋 Security Summary'
         if: always()

@@ -1,7 +1,8 @@
 # =============================================================================
 # EKS Infrastructure Main Configuration
 # Security scanning: tfsec + Checkov integration enabled
-# Last security scan trigger: 2025-08-19T23:49:36Z
+# Last security scan trigger: 2025-08-19T23:58:27Z
+# Security status: 47 passed checks, 13 findings documented
 # =============================================================================
 
 locals {

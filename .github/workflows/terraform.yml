@@ -144,13 +144,29 @@ jobs:
             echo "❌ ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif not found"
           fi
 
+      - name: '📁 Prepare SARIF Files for Upload'
+        if: always()
+        run: |
+          echo "📁 Copying SARIF files to upload directory..."
+          mkdir -p sarif-upload
+          if [ -f "tfsec-results.sarif" ]; then
+            cp tfsec-results.sarif sarif-upload/
+            echo "✅ Copied tfsec-results.sarif"
+          fi
+          if [ -f "checkov-results.sarif/results_sarif.sarif" ]; then
+            cp checkov-results.sarif/results_sarif.sarif sarif-upload/checkov-results.sarif
+            echo "✅ Copied checkov results as checkov-results.sarif"
+          fi
+          echo "Contents of sarif-upload directory:"
+          ls -la sarif-upload/
+
       - name: '📊 Upload Security Scan Results'
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
-            ${{ github.workspace }}/tfsec-results.sarif
-            ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif
+            sarif-upload/tfsec-results.sarif
+            sarif-upload/checkov-results.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

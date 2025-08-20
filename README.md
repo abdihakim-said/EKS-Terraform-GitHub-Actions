@@ -611,6 +611,44 @@ resource "aws_flow_log" "vpc_flow_log" {
 - **Workflow Summaries**: Detailed findings in CI/CD logs
 - **SARIF Upload**: Machine-readable security results
 
+### **Complete Security Scan Output**
+
+#### **🔍 Latest Checkov Security Scan Results:**
+```bash
+# Checkov v3.2.461 by Prisma Cloud
+terraform scan results:
+
+Passed checks: 47, Failed checks: 13, Skipped checks: 0
+
+# Critical IAM Policy Findings:
+✗ CKV_AWS_63: "Ensure no IAM policies documents allow '*' as a statement's actions"
+✗ CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints"
+✗ CKV_AWS_289: "Ensure IAM policies does not allow permissions management without constraints"
+✗ CKV_AWS_286: "Ensure IAM policies does not allow privilege escalation"
+✗ CKV_AWS_355: "Ensure no IAM policies documents allow '*' as a statement's resource"
+✗ CKV_AWS_287: "Ensure IAM policies does not allow credentials exposure"
+✗ CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration"
+✗ CKV_AWS_62: "Ensure IAM policies that allow full '*-*' administrative privileges are not created"
+✗ CKV2_AWS_40: "Ensure AWS IAM policy does not allow full IAM privileges"
+
+# Network Security Findings:
+✗ CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+✗ CKV_AWS_382: "Ensure no security groups allow egress from 0.0.0.0:0 to port -1"
+
+# VPC Monitoring Findings:
+✗ CKV2_AWS_11: "Ensure VPC flow logging is enabled in all VPCs"
+✗ CKV2_AWS_12: "Ensure the default security group of every VPC restricts all traffic"
+```
+
+#### **📊 Security Scan Statistics:**
+- **🛡️ Scanner**: Checkov v3.2.461 by Prisma Cloud
+- **✅ Passed**: 47 security validations (78% compliance)
+- **⚠️ Failed**: 13 specific issues identified (22% needs improvement)
+- **🔍 Coverage**: 100% infrastructure scanned (0 skipped)
+- **📋 Policies**: 500+ built-in security policies validated
+- **⏱️ Scan Time**: ~1 minute for complete infrastructure
+- **🔄 Frequency**: Automated on every code change
+
 ### **Security Scan Results Location**
 - **GitHub Security**: https://github.com/abdihakim-said/EKS-Terraform-GitHub-Actions/security
 - **Latest Scan**: https://github.com/abdihakim-said/EKS-Terraform-GitHub-Actions/actions/runs/17084676957

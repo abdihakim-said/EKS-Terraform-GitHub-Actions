@@ -29,6 +29,19 @@ resource "aws_vpc" "vpc" {
   })
 }
 
+# Restrict default security group to deny all traffic
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.vpc.id
+
+  # Remove all default rules - no ingress or egress allowed
+  ingress = []
+  egress  = []
+
+  tags = merge(local.common_tags, {
+    Name = "${var.vpc-name}-default-sg-restricted"
+  })
+}
+
 # VPC Flow Logs for security monitoring
 resource "aws_flow_log" "vpc_flow_log" {
   iam_role_arn    = aws_iam_role.flow_log_role.arn
@@ -56,11 +69,52 @@ resource "aws_cloudwatch_log_group" "vpc_flow_log" {
 resource "aws_kms_key" "vpc_flow_log_key" {
   description             = "KMS key for VPC Flow Logs encryption"
   deletion_window_in_days = 7
+  enable_key_rotation     = true  # Enable automatic key rotation
+
+  # Explicit key policy for security compliance
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnEquals = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/flowlogs/${var.vpc-name}"
+          }
+        }
+      }
+    ]
+  })
 
   tags = merge(local.common_tags, {
     Name = "${var.vpc-name}-flow-log-key"
   })
 }
+
+# Data sources for account ID and region
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 # KMS Key Alias
 resource "aws_kms_alias" "vpc_flow_log_key_alias" {
@@ -292,13 +346,50 @@ resource "aws_security_group" "eks-cluster-sg" {
     cidr_blocks = [var.cidr-block] # Only allow access from within VPC
   }
 
-  # Allow all outbound traffic
+  # More restrictive egress rules
+  # HTTPS for AWS API calls
   egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "HTTPS for AWS services"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP for package updates and container registries
+  egress {
+    description = "HTTP for package updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # DNS resolution
+  egress {
+    description = "DNS resolution"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # NTP for time synchronization
+  egress {
+    description = "NTP time sync"
+    from_port   = 123
+    to_port     = 123
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Internal VPC communication
+  egress {
+    description = "Internal VPC communication"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [var.cidr-block]
   }
 
   tags = merge(local.common_tags, {

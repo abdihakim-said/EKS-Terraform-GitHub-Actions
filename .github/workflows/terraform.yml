@@ -110,7 +110,7 @@ jobs:
           working_directory: ${{ env.WORKING_DIR }}
           soft_fail: true
           format: sarif
-          additional_args: --out ${{ env.WORKING_DIR }}/tfsec-results.sarif
+          additional_args: --out tfsec-results.sarif
 
       - name: '🔒 Security Scan with Checkov'
         uses: bridgecrewio/checkov-action@master
@@ -118,7 +118,7 @@ jobs:
           directory: ${{ env.WORKING_DIR }}
           framework: terraform
           output_format: sarif
-          output_file_path: ${{ env.WORKING_DIR }}/checkov-results.sarif
+          output_file_path: checkov-results.sarif
           soft_fail: true
           quiet: true
 
@@ -130,19 +130,28 @@ jobs:
           echo "Contents of current directory:"
           ls -la
           echo ""
-          echo "Contents of ${{ env.WORKING_DIR }} directory:"
-          ls -la ${{ env.WORKING_DIR }}/
-          echo ""
           echo "Looking for SARIF files:"
           find . -name "*.sarif" -type f | head -10
+          echo ""
+          echo "Checking specific SARIF files:"
+          if [ -f "tfsec-results.sarif" ]; then
+            echo "✅ tfsec-results.sarif exists ($(wc -c < tfsec-results.sarif) bytes)"
+          else
+            echo "❌ tfsec-results.sarif not found"
+          fi
+          if [ -f "checkov-results.sarif" ]; then
+            echo "✅ checkov-results.sarif exists ($(wc -c < checkov-results.sarif) bytes)"
+          else
+            echo "❌ checkov-results.sarif not found"
+          fi
 
       - name: '📊 Upload Security Scan Results'
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
-            ${{ env.WORKING_DIR }}/tfsec-results.sarif
-            ${{ env.WORKING_DIR }}/checkov-results.sarif
+            tfsec-results.sarif
+            checkov-results.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

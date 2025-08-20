@@ -124,17 +124,15 @@ jobs:
 
       - name: '🔍 Debug SARIF Files'
         if: always()
+        working-directory: .
         run: |
           echo "🔍 Checking for SARIF files..."
           echo "Working directory: $(pwd)"
           echo "Contents of current directory:"
           ls -la
           echo ""
-          echo "Contents of root directory:"
-          ls -la ../
-          echo ""
           echo "Looking for SARIF files everywhere:"
-          find .. -name "*.sarif" -type f 2>/dev/null | head -10
+          find . -name "*.sarif" -type f 2>/dev/null | head -10
           echo ""
           echo "Checking specific SARIF files in current directory:"
           if [ -f "tfsec-results.sarif" ]; then
@@ -142,31 +140,20 @@ jobs:
           else
             echo "❌ tfsec-results.sarif not found in current directory"
           fi
-          if [ -f "checkov-results.sarif" ]; then
-            echo "✅ checkov-results.sarif exists ($(wc -c < checkov-results.sarif) bytes)"
+          if [ -f "checkov-results.sarif/results_sarif.sarif" ]; then
+            echo "✅ checkov-results.sarif/results_sarif.sarif exists ($(wc -c < checkov-results.sarif/results_sarif.sarif) bytes)"
           else
-            echo "❌ checkov-results.sarif not found in current directory"
-          fi
-          echo ""
-          echo "Checking specific SARIF files in root directory:"
-          if [ -f "../tfsec-results.sarif" ]; then
-            echo "✅ ../tfsec-results.sarif exists ($(wc -c < ../tfsec-results.sarif) bytes)"
-          else
-            echo "❌ ../tfsec-results.sarif not found in root directory"
-          fi
-          if [ -f "../checkov-results.sarif/results_sarif.sarif" ]; then
-            echo "✅ ../checkov-results.sarif/results_sarif.sarif exists ($(wc -c < ../checkov-results.sarif/results_sarif.sarif) bytes)"
-          else
-            echo "❌ ../checkov-results.sarif/results_sarif.sarif not found"
+            echo "❌ checkov-results.sarif/results_sarif.sarif not found"
           fi
 
       - name: '📊 Upload Security Scan Results'
         if: always()
+        working-directory: .
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
-            ../tfsec-results.sarif
-            ../checkov-results.sarif/results_sarif.sarif
+            tfsec-results.sarif
+            checkov-results.sarif/results_sarif.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

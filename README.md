@@ -651,7 +651,7 @@ Passed checks: 47, Failed checks: 13, Skipped checks: 0
 
 ### **Security Scan Results Location**
 - **GitHub Security**: https://github.com/abdihakim-said/EKS-Terraform-GitHub-Actions/security
-- **Latest Scan**: https://github.com/abdihakim-said/EKS-Terraform-GitHub-Actions/actions/runs/17084676957
+- **Latest Scan**: https://github.com/abdihakim-said/EKS-Terraform-GitHub-Actions/actions/runs/17084784677
 - **Security Policies**: Comprehensive validation with 500+ checks
 
 ### **Enterprise Security Standards**

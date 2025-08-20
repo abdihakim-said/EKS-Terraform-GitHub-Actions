@@ -29,6 +29,73 @@ resource "aws_vpc" "vpc" {
   })
 }
 
+# VPC Flow Logs for security monitoring
+resource "aws_flow_log" "vpc_flow_log" {
+  iam_role_arn    = aws_iam_role.flow_log_role.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_log.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.vpc.id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.vpc-name}-flow-logs"
+  })
+}
+
+# CloudWatch Log Group for VPC Flow Logs
+resource "aws_cloudwatch_log_group" "vpc_flow_log" {
+  name              = "/aws/vpc/flowlogs/${var.vpc-name}"
+  retention_in_days = 7
+
+  tags = merge(local.common_tags, {
+    Name = "${var.vpc-name}-flow-logs"
+  })
+}
+
+# IAM Role for VPC Flow Logs
+resource "aws_iam_role" "flow_log_role" {
+  name = "${var.vpc-name}-flow-log-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${var.vpc-name}-flow-log-role"
+  })
+}
+
+# IAM Policy for VPC Flow Logs
+resource "aws_iam_role_policy" "flow_log_policy" {
+  name = "${var.vpc-name}-flow-log-policy"
+  role = aws_iam_role.flow_log_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Effect = "Allow"
+        Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}:*"
+      }
+    ]
+  })
+}
+
 # =============================================================================
 # INTERNET GATEWAY
 # =============================================================================

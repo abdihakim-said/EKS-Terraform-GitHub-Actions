@@ -75,17 +75,18 @@ resource "aws_iam_role" "eks_oidc" {
 }
 
 resource "aws_iam_policy" "eks-oidc-policy" {
-  name = "test-policy"
+  name = "eks-oidc-policy"
 
   policy = jsonencode({
     Statement = [{
       Action = [
         "s3:ListAllMyBuckets",
-        "s3:GetBucketLocation",
-        "*"
+        "s3:GetBucketLocation"
       ]
       Effect   = "Allow"
-      Resource = "*"
+      Resource = [
+        "arn:aws:s3:::*"
+      ]
     }]
     Version = "2012-10-17"
   })

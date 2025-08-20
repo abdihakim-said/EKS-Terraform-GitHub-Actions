@@ -1,10 +1,10 @@
 # =============================================================================
 # EKS Infrastructure Main Configuration
 # Security scanning: tfsec + Checkov integration enabled
-# Last security scan trigger: 2025-08-20T00:35:00Z
-# Security validation: Testing workflow syntax fix - removed invalid working-directory
+# Last security scan trigger: 2025-08-20T00:40:00Z
+# Security validation: Testing absolute paths for SARIF upload
 # Complete scan output: Included in documentation for interview showcase
-# SARIF Fix: Final syntax correction for GitHub Actions compatibility
+# SARIF Fix: Using github.workspace for absolute file paths
 # =============================================================================
 
 locals {

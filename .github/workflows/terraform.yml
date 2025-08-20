@@ -64,11 +64,6 @@ jobs:
     name: 'Validate & Security Scan'
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.event_name == 'push'
-    
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ env.WORKING_DIR }}
 
     steps:
       - name: '📥 Checkout Code'
@@ -87,18 +82,21 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: '📝 Terraform Format Check'
+        working-directory: ${{ env.WORKING_DIR }}
         run: |
           echo "🔍 Checking Terraform formatting..."
           terraform fmt -check -recursive
           echo "✅ Terraform formatting is correct"
 
       - name: '🚀 Terraform Init'
+        working-directory: ${{ env.WORKING_DIR }}
         run: |
           echo "🚀 Initializing Terraform..."
           terraform init
           echo "✅ Terraform initialized successfully"
 
       - name: '✅ Terraform Validate'
+        working-directory: ${{ env.WORKING_DIR }}
         run: |
           echo "🔍 Validating Terraform configuration..."
           terraform validate

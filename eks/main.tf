@@ -1,10 +1,10 @@
 # =============================================================================
 # EKS Infrastructure Main Configuration
 # Security scanning: tfsec + Checkov integration enabled
-# Last security scan trigger: 2025-08-20T00:27:00Z
-# Security validation: Testing FINAL SARIF fix with correct paths
+# Last security scan trigger: 2025-08-20T00:32:00Z
+# Security validation: Testing workflow syntax fix
 # Complete scan output: Included in documentation for interview showcase
-# SARIF Fix: FINAL - Using correct paths for both tfsec and Checkov
+# SARIF Fix: Testing corrected working directory configuration
 # =============================================================================
 
 locals {

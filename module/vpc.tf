@@ -44,11 +44,28 @@ resource "aws_flow_log" "vpc_flow_log" {
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc/flowlogs/${var.vpc-name}"
-  retention_in_days = 7
+  retention_in_days = 365  # 1 year retention for compliance
+  kms_key_id        = aws_kms_key.vpc_flow_log_key.arn
 
   tags = merge(local.common_tags, {
     Name = "${var.vpc-name}-flow-logs"
   })
+}
+
+# KMS Key for CloudWatch Log Group encryption
+resource "aws_kms_key" "vpc_flow_log_key" {
+  description             = "KMS key for VPC Flow Logs encryption"
+  deletion_window_in_days = 7
+
+  tags = merge(local.common_tags, {
+    Name = "${var.vpc-name}-flow-log-key"
+  })
+}
+
+# KMS Key Alias
+resource "aws_kms_alias" "vpc_flow_log_key_alias" {
+  name          = "alias/${var.vpc-name}-flow-log-key"
+  target_key_id = aws_kms_key.vpc_flow_log_key.key_id
 }
 
 # IAM Role for VPC Flow Logs

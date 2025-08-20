@@ -122,7 +122,6 @@ jobs:
 
       - name: '🔍 Debug SARIF Files'
         if: always()
-        working-directory: .
         run: |
           echo "🔍 Checking for SARIF files..."
           echo "Working directory: $(pwd)"
@@ -146,7 +145,6 @@ jobs:
 
       - name: '📊 Upload Security Scan Results'
         if: always()
-        working-directory: .
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |

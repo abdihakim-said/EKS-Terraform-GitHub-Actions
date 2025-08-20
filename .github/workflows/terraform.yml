@@ -165,8 +165,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
-            sarif-upload/tfsec-results.sarif
-            sarif-upload/checkov-results.sarif
+            ${{ github.workspace }}/sarif-upload/tfsec-results.sarif
+            ${{ github.workspace }}/sarif-upload/checkov-results.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

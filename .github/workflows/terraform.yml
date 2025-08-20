@@ -154,10 +154,10 @@ jobs:
           else
             echo "❌ ../tfsec-results.sarif not found in root directory"
           fi
-          if [ -f "../checkov-results.sarif" ]; then
-            echo "✅ ../checkov-results.sarif exists ($(wc -c < ../checkov-results.sarif) bytes)"
+          if [ -f "../checkov-results.sarif/results_sarif.sarif" ]; then
+            echo "✅ ../checkov-results.sarif/results_sarif.sarif exists ($(wc -c < ../checkov-results.sarif/results_sarif.sarif) bytes)"
           else
-            echo "❌ ../checkov-results.sarif not found in root directory"
+            echo "❌ ../checkov-results.sarif/results_sarif.sarif not found"
           fi
 
       - name: '📊 Upload Security Scan Results'
@@ -166,7 +166,7 @@ jobs:
         with:
           sarif_file: |
             ../tfsec-results.sarif
-            ../checkov-results.sarif
+            ../checkov-results.sarif/results_sarif.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

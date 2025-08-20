@@ -125,22 +125,23 @@ jobs:
         run: |
           echo "🔍 Checking for SARIF files..."
           echo "Working directory: $(pwd)"
+          echo "GitHub workspace: ${{ github.workspace }}"
           echo "Contents of current directory:"
           ls -la
           echo ""
           echo "Looking for SARIF files everywhere:"
           find . -name "*.sarif" -type f 2>/dev/null | head -10
           echo ""
-          echo "Checking specific SARIF files in current directory:"
-          if [ -f "tfsec-results.sarif" ]; then
-            echo "✅ tfsec-results.sarif exists ($(wc -c < tfsec-results.sarif) bytes)"
+          echo "Checking specific SARIF files with absolute paths:"
+          if [ -f "${{ github.workspace }}/tfsec-results.sarif" ]; then
+            echo "✅ ${{ github.workspace }}/tfsec-results.sarif exists ($(wc -c < ${{ github.workspace }}/tfsec-results.sarif) bytes)"
           else
-            echo "❌ tfsec-results.sarif not found in current directory"
+            echo "❌ ${{ github.workspace }}/tfsec-results.sarif not found"
           fi
-          if [ -f "checkov-results.sarif/results_sarif.sarif" ]; then
-            echo "✅ checkov-results.sarif/results_sarif.sarif exists ($(wc -c < checkov-results.sarif/results_sarif.sarif) bytes)"
+          if [ -f "${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif" ]; then
+            echo "✅ ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif exists ($(wc -c < ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif) bytes)"
           else
-            echo "❌ checkov-results.sarif/results_sarif.sarif not found"
+            echo "❌ ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif not found"
           fi
 
       - name: '📊 Upload Security Scan Results'
@@ -148,8 +149,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
-            tfsec-results.sarif
-            checkov-results.sarif/results_sarif.sarif
+            ${{ github.workspace }}/tfsec-results.sarif
+            ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif
           category: 'terraform-security'
 
       - name: '📋 Security Summary'

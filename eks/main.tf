@@ -1,10 +1,10 @@
 # =============================================================================
 # EKS Infrastructure Main Configuration
 # Security scanning: tfsec + Checkov integration enabled
-# Last security scan trigger: 2025-08-20T00:40:00Z
-# Security validation: Testing absolute paths for SARIF upload
+# Last security scan trigger: 2025-08-20T00:43:00Z
+# Security validation: Testing SARIF file copy approach
 # Complete scan output: Included in documentation for interview showcase
-# SARIF Fix: Using github.workspace for absolute file paths
+# SARIF Fix: Copy files to dedicated upload directory with simple paths
 # =============================================================================
 
 locals {

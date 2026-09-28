@@ -1,8 +1,9 @@
-# 🚀 Production-Ready EKS Infrastructure with Terraform & GitHub Actions
+# EKS from a Pull Request: Terraform + GitHub Actions (OIDC)
+
+> **Hands-on build, not client work.** Built in my own AWS account to practise the pattern. An earlier version of this README described a client engagement with business metrics; that was wrong and has been removed. Starting point: [AmanPathak-DevOps/EKS-Terraform-GitHub-Actions](https://github.com/AmanPathak-DevOps/EKS-Terraform-GitHub-Actions); I deployed it and worked through the Checkov/tfsec findings documented below. Write-up: [Medium](https://medium.com/@said-devops).
 
 [![LinkedIn](https://img.shields.io/badge/Connect%20with%20me%20on-LinkedIn-blue.svg)](https://www.linkedin.com/in/said-devops/)
 [![Medium](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/@said-devops)
-[![GitHub](https://img.shields.io/github/stars/AmanPathak-DevOps.svg?style=social)](https://github.com/abdihakim-said)
 [![AWS](https://img.shields.io/badge/AWS-%F0%9F%9B%A1-orange)](https://aws.amazon.com)
 [![Terraform](https://img.shields.io/badge/Terraform-%E2%9C%A8-lightgrey)](https://www.terraform.io)
 
@@ -10,7 +11,7 @@
 
 ## 🌟 Overview
 
-This repository demonstrates **enterprise-grade** EKS infrastructure deployment using modern DevOps practices. Built for **production environments** with comprehensive security scanning, multi-environment support, and automated CI/CD pipelines.
+Modular Terraform for Amazon EKS, deployed from GitHub Actions with OIDC (no stored AWS keys), with tfsec and Checkov scanning, multi-environment workspaces and Spot node groups.
 
 ### 🎯 **Key Features**
 
@@ -18,7 +19,7 @@ This repository demonstrates **enterprise-grade** EKS infrastructure deployment 
 - **🏗️ Multi-Environment**: Isolated workspaces for dev/staging/prod
 - **🚀 CI/CD Automation**: GitHub Actions with OIDC authentication
 - **📊 Cost Optimization**: Mixed on-demand and spot instances
-- **🛡️ Enterprise Security**: Private endpoints, restricted access
+- **🛡️ Security**: Private endpoints, restricted access
 - **📋 Rich Outputs**: Comprehensive resource information
 
 ## 🏗️ **Architecture**
@@ -103,137 +104,22 @@ This repository demonstrates **enterprise-grade** EKS infrastructure deployment 
 | **Spot Instances** | ✅ 70% | ✅ 50% | ✅ 30% |
 | **Backup Retention** | 7 days | 30 days | 90 days |
 
-## 🌟 **Real-World Project Scenario**
+## 🎯 The brief
 
-### **The Challenge: Modernizing a Legacy E-commerce Platform**
+A self-directed build in my own AWS account, using an SAP-migration scenario as the brief: a team moving workloads to AWS needs a Kubernetes platform that is
 
-#### 📋 **Business Context**
-Our client, a mid-sized e-commerce company, was struggling with their legacy monolithic application running on traditional EC2 instances. They faced several critical challenges:
+- **Reproducible**: the same code builds dev, staging and prod
+- **Automated**: changes go through pull requests, no hand-built infrastructure
+- **Cost-aware**: Spot capacity where it is safe
+- **Secure by default**: private worker nodes and no long-lived AWS keys in CI
 
-- **Scalability Issues**: Black Friday traffic spikes caused frequent outages
-- **High Operational Costs**: Over-provisioned EC2 instances running 24/7
-- **Slow Deployment Cycles**: 2-week release cycles with manual deployments
-- **Security Concerns**: Inconsistent security configurations across environments
-- **Team Productivity**: Developers waiting hours for environment provisioning
+### Results, honestly stated
 
-#### 🎯 **The Problem Statement**
-*"How do we modernize our infrastructure to handle 10x traffic spikes, reduce operational costs by 40%, and enable daily deployments while maintaining enterprise-grade security?"*
+- A cluster from `terraform apply` in about 15 minutes in my own account.
+- The same code parameterised for multiple environments.
+- Checkov and tfsec findings worked through and fixed in code (IAM wildcards, default security group, VPC Flow Logs, KMS); see the security section below.
+- **No production workload ran on it.** This was a build to practise the pattern, not a client migration, and no business metrics are claimed.
 
----
-
-### **🔍 Solution Architecture Decision**
-
-#### **Why EKS Over Alternatives?**
-
-| **Requirement** | **EC2** | **ECS** | **EKS** | **Decision Rationale** |
-|-----------------|---------|---------|---------|------------------------|
-| **Container Orchestration** | ❌ Manual | ✅ AWS Native | ✅ Kubernetes Standard | **EKS**: Industry-standard Kubernetes with vendor neutrality |
-| **Auto-scaling** | 🟡 Basic ASG | ✅ Service-based | ✅ HPA + VPA + CA | **EKS**: Multi-dimensional scaling (pods, nodes, cluster) |
-| **Multi-cloud Strategy** | ❌ AWS-locked | ❌ AWS-locked | ✅ Portable | **EKS**: Future-proof for hybrid/multi-cloud |
-| **Ecosystem & Tools** | 🟡 Limited | 🟡 AWS Tools | ✅ Rich Ecosystem | **EKS**: Helm, Istio, Prometheus, extensive CNCF tools |
-| **Team Expertise** | ✅ Familiar | 🟡 Learning curve | ✅ Industry Standard | **EKS**: Kubernetes skills are transferable and in-demand |
-| **Cost Optimization** | 🟡 Reserved Instances | ✅ Fargate | ✅ Spot + Right-sizing | **EKS**: Mixed instance types + spot instances = 70% savings |
-| **Security & Compliance** | 🟡 Manual hardening | ✅ AWS managed | ✅ Policy-as-Code | **EKS**: Pod Security Standards + Network Policies |
-
-#### **🏆 Why EKS Won:**
-1. **Future-Proof**: Kubernetes is the industry standard with massive ecosystem
-2. **Cost Efficiency**: Spot instances + auto-scaling = 70% cost reduction
-3. **Developer Experience**: Self-service environments + faster deployments
-4. **Enterprise Security**: Built-in compliance with policy-as-code
-5. **Vendor Independence**: Avoid AWS lock-in for future flexibility
-
----
-
-### **🚀 Implementation Strategy**
-
-#### **Phase 1: Foundation (Week 1-2)**
-```
-🏗️ Infrastructure as Code
-├── Terraform modules for reusable components
-├── Multi-environment strategy (dev/staging/prod)
-├── S3 backend with DynamoDB locking
-└── GitHub Actions CI/CD pipeline
-
-🔐 Security First
-├── OIDC authentication (no long-lived keys)
-├── tfsec + Checkov security scanning
-├── Private EKS endpoints
-└── Least-privilege IAM roles
-```
-
-#### **Phase 2: Container Platform (Week 3-4)**
-```
-🎛️ EKS Cluster Setup
-├── Multi-AZ deployment for high availability
-├── Mixed node groups (on-demand + spot)
-├── Cluster autoscaler + HPA configuration
-└── Container insights monitoring
-
-📦 Application Migration
-├── Containerized microservices
-├── Helm charts for application deployment
-├── Service mesh (Istio) for traffic management
-└── External secrets management
-```
-
-#### **Phase 3: Optimization & Monitoring (Week 5-6)**
-```
-📊 Observability Stack
-├── Prometheus + Grafana monitoring
-├── ELK stack for centralized logging
-├── Jaeger for distributed tracing
-└── Custom dashboards and alerting
-
-💰 Cost Optimization
-├── Vertical Pod Autoscaler (VPA)
-├── Cluster autoscaler fine-tuning
-├── Resource quotas and limits
-└── Cost allocation tags
-```
-
----
-
-### **📈 Results & Achievements**
-
-#### **🎯 Business Impact**
-| **Metric** | **Before (EC2)** | **After (EKS)** | **Improvement** |
-|------------|------------------|-----------------|-----------------|
-| **Deployment Time** | 2 hours | 5 minutes | **96% faster** |
-| **Infrastructure Cost** | $12,000/month | $4,800/month | **60% reduction** |
-| **Scaling Time** | 15 minutes | 30 seconds | **97% faster** |
-| **Uptime** | 99.5% | 99.95% | **0.45% improvement** |
-| **Security Incidents** | 3/month | 0/month | **100% reduction** |
-| **Developer Productivity** | 2 deployments/week | 5 deployments/day | **17.5x increase** |
-
-#### **🏆 Technical Achievements**
-
-**Cost Optimization:**
-- ✅ **70% cost savings** through spot instances and right-sizing
-- ✅ **Eliminated idle resources** with cluster autoscaler
-- ✅ **Reduced operational overhead** by 80% with managed services
-
-**Performance & Reliability:**
-- ✅ **Handled 10x traffic spikes** during Black Friday (2M → 20M requests/hour)
-- ✅ **Zero-downtime deployments** with rolling updates
-- ✅ **Sub-second scaling** response to traffic changes
-- ✅ **99.95% uptime** with multi-AZ deployment
-
-**Security & Compliance:**
-- ✅ **Passed SOC 2 audit** with automated compliance checks
-- ✅ **Zero security incidents** in production
-- ✅ **Implemented least-privilege access** across all environments
-- ✅ **Automated security scanning** in CI/CD pipeline
-- ✅ **47 security checks passed** with comprehensive validation
-- ✅ **13 security findings identified** with clear remediation paths
-- ✅ **Multi-layered security** with defense in depth approach
-
-**Developer Experience:**
-- ✅ **Self-service environments** provisioned in 5 minutes
-- ✅ **GitOps workflow** with automated deployments
-- ✅ **Comprehensive monitoring** with custom dashboards
-- ✅ **Reduced MTTR** from 2 hours to 10 minutes
-
----
 
 ### **🔧 Technical Implementation Highlights**
 
@@ -335,36 +221,6 @@ spec:
 
 ---
 
-### **🎤 Interview Talking Points**
-
-**Technical Leadership:**
-- Led the architecture decision process using data-driven analysis
-- Balanced business requirements with technical constraints
-- Implemented enterprise-grade security from the ground up
-
-**Problem-Solving:**
-- Identified root causes of scalability and cost issues
-- Designed solutions that addressed multiple pain points simultaneously
-- Implemented monitoring to prevent future issues
-
-**Business Impact:**
-- Delivered measurable ROI with 60% cost reduction
-- Enabled business growth with 10x scaling capability
-- Improved developer productivity by 17.5x
-
-**Innovation:**
-- Adopted cutting-edge technologies (EKS, spot instances, OIDC)
-- Implemented security-first DevOps practices
-- Created reusable, scalable infrastructure patterns
-
-**Security Excellence:**
-- Implemented automated security scanning with 47 passed checks
-- Identified and documented 13 security findings with remediation paths
-- Achieved zero security incidents through multi-layered defense
-- Integrated policy-as-code with 500+ security validations
-
-This project demonstrates my ability to **architect enterprise-grade solutions**, **drive technical decisions**, and **deliver measurable business value** through modern cloud-native technologies.
-
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
@@ -432,7 +288,7 @@ endpoint-public-access   = false
 
 ### **Comprehensive Security Scanning Results**
 
-Our infrastructure undergoes rigorous automated security scanning with enterprise-grade tools:
+The infrastructure is scanned with tfsec and Checkov:
 
 #### **📊 Latest Security Scan Results:**
 - **✅ Passed Checks**: **47 security validations passed**
@@ -462,7 +318,7 @@ Our infrastructure undergoes rigorous automated security scanning with enterpris
 - SARIF output: ⚠️ File path issue (troubleshooting in progress)
 ```
 
-**Note**: The tfsec SARIF file path issue demonstrates real-world CI/CD troubleshooting scenarios - a valuable talking point for interviews about debugging and continuous improvement.
+**Note**: The tfsec SARIF file path issue demonstrates real-world CI/CD troubleshooting scenarios.
 
 ### **Infrastructure Security**
 - ✅ **Private EKS endpoints**: API server only accessible within VPC
@@ -831,33 +687,6 @@ resource "aws_cloudwatch_log_group" "vpc_flow_log" {
 }
 ```
 
-### **🎯 Security Compliance Achievements:**
-
-#### **📋 Compliance Framework Alignment:**
-- **✅ CIS Benchmarks**: Kubernetes and AWS security controls implemented
-- **✅ SOC 2**: Infrastructure controls and comprehensive monitoring
-- **✅ GDPR**: Data protection with encryption and access controls
-- **✅ NIST**: Security framework alignment with defense-in-depth
-- **✅ AWS Well-Architected**: Security pillar best practices
-
-#### **🔍 Security Validation Process:**
-1. **Automated Scanning**: Every code change triggers security validation
-2. **Policy-as-Code**: 500+ security policies automatically enforced
-3. **SARIF Integration**: Results uploaded to GitHub Security dashboard
-4. **Continuous Monitoring**: Real-time security posture assessment
-5. **Remediation Guidance**: Clear instructions for any identified issues
-
-### **📈 Security Metrics & KPIs:**
-
-| **Security Metric** | **Target** | **Achieved** | **Status** |
-|---------------------|------------|--------------|------------|
-| **Security Compliance** | >95% | **98.7%** | ✅ Exceeded |
-| **Critical Issues** | 0 | **0** | ✅ Achieved |
-| **Scan Coverage** | 100% | **100%** | ✅ Achieved |
-| **Encryption Coverage** | 100% | **100%** | ✅ Achieved |
-| **IAM Compliance** | >90% | **100%** | ✅ Exceeded |
-| **Network Security** | >95% | **98%** | ✅ Exceeded |
-
 ### **🚀 Security Automation Pipeline:**
 
 #### **🔄 CI/CD Security Integration:**
@@ -870,7 +699,7 @@ Security Validation Workflow:
 │   └── 500+ security policy checks
 ├── 📊 SARIF Results Generation
 ├── 🔗 GitHub Security Tab Integration
-├── ✅ Security Gate (98.7% compliance)
+├── ✅ Security gate
 └── 🚀 Deployment Authorization
 ```
 
@@ -889,38 +718,6 @@ Security Validation Workflow:
 4. **Monitoring Security**: VPC Flow Logs, CloudWatch integration
 5. **Application Security**: Private endpoints, secure communication
 6. **Operational Security**: Automated scanning, policy enforcement
-
-#### **🎯 Enterprise Security Standards:**
-- **Zero Trust Architecture**: Never trust, always verify
-- **Least Privilege Access**: Minimal required permissions only
-- **Encryption Everywhere**: Data at rest and in transit
-- **Continuous Monitoring**: Real-time security visibility
-- **Automated Compliance**: Policy-as-code enforcement
-- **Incident Response**: Clear remediation procedures
-
-### **🏆 Interview Showcase Points:**
-
-#### **Security Leadership Excellence:**
-- **"I achieved 98.7% security compliance by systematically resolving 12 critical vulnerabilities"**
-- **"I implemented enterprise-grade security with automated scanning and policy enforcement"**
-- **"I transformed infrastructure security from 78% to 98.7% compliance (+20.7% improvement)"**
-
-#### **Technical Security Mastery:**
-- **"I eliminated dangerous IAM wildcard permissions and implemented least-privilege access"**
-- **"I added comprehensive security monitoring with encrypted VPC Flow Logs"**
-- **"I integrated security scanning into CI/CD with GitHub Security dashboard"**
-
-#### **Problem-Solving & Risk Assessment:**
-- **"I analyzed each security finding, implemented targeted solutions, and validated results"**
-- **"I balanced security requirements with operational needs for EKS functionality"**
-- **"I distinguished between real security issues and acceptable architectural decisions"**
-
-#### **Enterprise Impact:**
-- **"I built production-ready infrastructure exceeding enterprise security standards"**
-- **"I created reusable, secure Terraform modules following AWS security best practices"**
-- **"I established automated security validation preventing security debt accumulation"**
-
-This security implementation demonstrates **world-class security engineering skills** and represents the gold standard for cloud infrastructure security in enterprise environments.
 
 ---
 
@@ -997,7 +794,7 @@ terraform output vpc_id
 terraform output node_groups
 ```
 
-## 🏢 **Enterprise Features**
+## 🏢 **Platform Features**
 
 ### **Governance**
 - Environment-specific approval workflows

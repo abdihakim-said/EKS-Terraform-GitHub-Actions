@@ -83,7 +83,7 @@ resource "aws_iam_policy" "eks-oidc-policy" {
         "s3:ListAllMyBuckets",
         "s3:GetBucketLocation"
       ]
-      Effect   = "Allow"
+      Effect = "Allow"
       Resource = [
         "arn:aws:s3:::*"
       ]

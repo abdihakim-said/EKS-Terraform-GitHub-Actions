@@ -57,7 +57,7 @@ resource "aws_flow_log" "vpc_flow_log" {
 # CloudWatch Log Group for VPC Flow Logs
 resource "aws_cloudwatch_log_group" "vpc_flow_log" {
   name              = "/aws/vpc/flowlogs/${var.vpc-name}"
-  retention_in_days = 365  # 1 year retention for compliance
+  retention_in_days = 365 # 1 year retention for compliance
   kms_key_id        = aws_kms_key.vpc_flow_log_key.arn
 
   tags = merge(local.common_tags, {
@@ -69,7 +69,7 @@ resource "aws_cloudwatch_log_group" "vpc_flow_log" {
 resource "aws_kms_key" "vpc_flow_log_key" {
   description             = "KMS key for VPC Flow Logs encryption"
   deletion_window_in_days = 7
-  enable_key_rotation     = true  # Enable automatic key rotation
+  enable_key_rotation     = true # Enable automatic key rotation
 
   # Explicit key policy for security compliance
   policy = jsonencode({
@@ -160,7 +160,7 @@ resource "aws_iam_role_policy" "flow_log_policy" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams"
         ]
-        Effect = "Allow"
+        Effect   = "Allow"
         Resource = "${aws_cloudwatch_log_group.vpc_flow_log.arn}:*"
       }
     ]

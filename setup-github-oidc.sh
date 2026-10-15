@@ -32,7 +32,7 @@ print_error() {
 # Get user inputs
 get_user_inputs() {
     echo "=========================================="
-    echo "🔐 GitHub OIDC Setup for AWS"
+    echo "GitHub OIDC Setup for AWS"
     echo "=========================================="
     echo ""
     
@@ -211,7 +211,7 @@ generate_github_info() {
     print_success "Setup Complete!"
     echo "=========================================="
     echo ""
-    echo "📋 Next Steps:"
+    echo "Next Steps:"
     echo ""
     echo "1. Add the following secret to your GitHub repository:"
     echo "   Go to: https://github.com/$GITHUB_USERNAME/$REPO_NAME/settings/secrets/actions"
@@ -228,7 +228,7 @@ generate_github_info() {
     echo "   • Run 'EKS Infrastructure Deployment' workflow"
     echo "   • Select environment: dev, action: plan"
     echo ""
-    echo "🔗 Useful Links:"
+    echo "Useful Links:"
     echo "   • Repository: https://github.com/$GITHUB_USERNAME/$REPO_NAME"
     echo "   • Actions: https://github.com/$GITHUB_USERNAME/$REPO_NAME/actions"
     echo "   • Settings: https://github.com/$GITHUB_USERNAME/$REPO_NAME/settings"

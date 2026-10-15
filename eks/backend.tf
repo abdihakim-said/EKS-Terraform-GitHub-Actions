@@ -16,25 +16,19 @@ terraform {
     }
   }
 
+  # Partial backend config: the bucket name is passed at init time
+  # (backend.hcl locally, the TF_STATE_BUCKET secret in CI), so no account ID is committed.
   backend "s3" {
-    # INTERVIEW POINT: Remote state management with S3
-    bucket         = "eks-terraform-state-426578051122-1755640986"
     region         = "us-east-1"
     key            = "eks/terraform.tfstate"
     dynamodb_table = "EKS-Terraform-Lock-Files"
     encrypt        = true
-
-    # SECURITY: Additional backend security features
-    skip_region_validation      = false
-    skip_credentials_validation = false
-    skip_metadata_api_check     = false
   }
 }
 
 provider "aws" {
   region = var.aws-region
 
-  # INTERVIEW POINT: Consistent tagging strategy across all resources
   default_tags {
     tags = {
       Environment = var.env

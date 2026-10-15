@@ -63,21 +63,21 @@ check_prerequisites() {
 show_menu() {
     echo ""
     echo "=========================================="
-    echo "🚀 EKS Infrastructure Quick Start"
+    echo "EKS Infrastructure Quick Start"
     echo "=========================================="
     echo ""
     echo "What would you like to do?"
     echo ""
-    echo "1) 🏗️  Set up backend infrastructure (S3 + DynamoDB)"
-    echo "2) 🔐 Set up GitHub OIDC for secure CI/CD"
-    echo "3) 🚀 Deploy EKS cluster (dev environment)"
-    echo "4) ⚙️  Configure kubectl for cluster access"
-    echo "5) 🧪 Deploy sample application"
-    echo "6) 🌍 Deploy to staging/production"
-    echo "7) 🧹 Destroy infrastructure"
-    echo "8) 📋 Show deployment status"
-    echo "9) ❓ Help and documentation"
-    echo "0) 🚪 Exit"
+    echo "1)   Set up backend infrastructure (S3 + DynamoDB)"
+    echo "2)  Set up GitHub OIDC for secure CI/CD"
+    echo "3)  Deploy EKS cluster (dev environment)"
+    echo "4)   Configure kubectl for cluster access"
+    echo "5)  Deploy sample application"
+    echo "6)  Deploy to staging/production"
+    echo "7)  Destroy infrastructure"
+    echo "8)  Show deployment status"
+    echo "9)  Help and documentation"
+    echo "0)  Exit"
     echo ""
 }
 
@@ -111,7 +111,7 @@ deploy_eks() {
     
     # Initialize Terraform
     print_status "Initializing Terraform..."
-    terraform init
+    terraform init -backend-config=backend.hcl
     
     # Create and select dev workspace
     print_status "Setting up dev workspace..."
@@ -328,15 +328,15 @@ show_status() {
 # Show help
 show_help() {
     echo ""
-    echo "📚 Help and Documentation"
+    echo "Help and Documentation"
     echo "========================="
     echo ""
-    echo "📋 Available documentation:"
+    echo "Available documentation:"
     echo "  • DEPLOYMENT.md - Complete deployment guide"
     echo "  • setup-github-oidc.md - GitHub OIDC setup guide"
     echo "  • README.md - Project overview and features"
     echo ""
-    echo "🔗 Useful commands:"
+    echo "Useful commands:"
     echo "  • terraform workspace list - Show all environments"
     echo "  • kubectl get nodes - Show cluster nodes"
     echo "  • kubectl get pods --all-namespaces - Show all pods"

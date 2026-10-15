@@ -66,43 +66,35 @@ jobs:
     if: github.event_name == 'pull_request' || github.event_name == 'push'
 
     steps:
-      - name: '📥 Checkout Code'
+      - name: 'Checkout Code'
         uses: actions/checkout@v4
 
-      - name: '🔐 Configure AWS Credentials'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          role-session-name: terraform-validate-${{ github.run_id }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: '🔧 Setup Terraform'
+      - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: '📝 Terraform Format Check'
+      - name: 'Terraform Format Check'
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          echo "🔍 Checking Terraform formatting..."
+          echo "Checking Terraform formatting..."
           terraform fmt -check -recursive
-          echo "✅ Terraform formatting is correct"
+          echo "Terraform formatting is correct"
 
-      - name: '🚀 Terraform Init'
+      - name: 'Terraform Init'
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          echo "🚀 Initializing Terraform..."
-          terraform init
-          echo "✅ Terraform initialized successfully"
+          # No backend and no AWS credentials, so validation works on any PR or fork
+          terraform init -backend=false
 
-      - name: '✅ Terraform Validate'
+      - name: 'Terraform Validate'
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          echo "🔍 Validating Terraform configuration..."
+          echo "Validating Terraform configuration..."
           terraform validate
-          echo "✅ Terraform configuration is valid"
+          echo "Terraform configuration is valid"
 
-      - name: '🛡️ Security Scan with tfsec'
+      - name: 'Security Scan with tfsec'
         uses: aquasecurity/tfsec-action@v1.0.3
         with:
           working_directory: ${{ env.WORKING_DIR }}
@@ -110,7 +102,7 @@ jobs:
           format: sarif
           additional_args: --out tfsec-results.sarif
 
-      - name: '🔒 Security Scan with Checkov'
+      - name: 'Security Scan with Checkov'
         uses: bridgecrewio/checkov-action@master
         with:
           directory: ${{ env.WORKING_DIR }}
@@ -120,47 +112,23 @@ jobs:
           soft_fail: true
           quiet: true
 
-      - name: '🔍 Debug SARIF Files'
+      - name: 'Prepare SARIF Files for Upload'
         if: always()
         run: |
-          echo "🔍 Checking for SARIF files..."
-          echo "Working directory: $(pwd)"
-          echo "GitHub workspace: ${{ github.workspace }}"
-          echo "Contents of current directory:"
-          ls -la
-          echo ""
-          echo "Looking for SARIF files everywhere:"
-          find . -name "*.sarif" -type f 2>/dev/null | head -10
-          echo ""
-          echo "Checking specific SARIF files with absolute paths:"
-          if [ -f "${{ github.workspace }}/tfsec-results.sarif" ]; then
-            echo "✅ ${{ github.workspace }}/tfsec-results.sarif exists ($(wc -c < ${{ github.workspace }}/tfsec-results.sarif) bytes)"
-          else
-            echo "❌ ${{ github.workspace }}/tfsec-results.sarif not found"
-          fi
-          if [ -f "${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif" ]; then
-            echo "✅ ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif exists ($(wc -c < ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif) bytes)"
-          else
-            echo "❌ ${{ github.workspace }}/checkov-results.sarif/results_sarif.sarif not found"
-          fi
-
-      - name: '📁 Prepare SARIF Files for Upload'
-        if: always()
-        run: |
-          echo "📁 Copying SARIF files to upload directory..."
+          echo "Copying SARIF files to upload directory..."
           mkdir -p sarif-upload
           if [ -f "tfsec-results.sarif" ]; then
             cp tfsec-results.sarif sarif-upload/
-            echo "✅ Copied tfsec-results.sarif"
+            echo "Copied tfsec-results.sarif"
           fi
           if [ -f "checkov-results.sarif/results_sarif.sarif" ]; then
             cp checkov-results.sarif/results_sarif.sarif sarif-upload/checkov-results.sarif
-            echo "✅ Copied checkov results as checkov-results.sarif"
+            echo "Copied checkov results as checkov-results.sarif"
           fi
           echo "Contents of sarif-upload directory:"
           ls -la sarif-upload/
 
-      - name: '📊 Upload tfsec Security Scan Results'
+      - name: 'Upload tfsec Security Scan Results'
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -168,7 +136,7 @@ jobs:
           category: 'terraform-security-tfsec'
           checkout_path: ${{ github.workspace }}
 
-      - name: '📊 Upload Checkov Security Scan Results'
+      - name: 'Upload Checkov Security Scan Results'
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -176,36 +144,6 @@ jobs:
           category: 'terraform-security-checkov'
           checkout_path: ${{ github.workspace }}
 
-      - name: '📋 Security Summary'
-        if: always()
-        run: |
-          echo "## 🛡️ Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Latest Scan Results:" >> $GITHUB_STEP_SUMMARY
-          echo "- **✅ Passed Checks**: 47 security validations" >> $GITHUB_STEP_SUMMARY
-          echo "- **⚠️ Failed Checks**: 13 issues identified" >> $GITHUB_STEP_SUMMARY
-          echo "- **🔍 Coverage**: 100% infrastructure scanned" >> $GITHUB_STEP_SUMMARY
-          echo "- **🛡️ Compliance**: 78% (47/60 checks passed)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔧 Tools Used:" >> $GITHUB_STEP_SUMMARY
-          echo "- **tfsec v1.28.14**: Fast Terraform security scanner" >> $GITHUB_STEP_SUMMARY
-          echo "- **Checkov v3.2.461**: Comprehensive policy-as-code scanner by Prisma Cloud" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚨 Key Findings:" >> $GITHUB_STEP_SUMMARY
-          echo "- **IAM Policy Issues**: 9 findings (wildcard permissions)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Network Security**: 3 findings (security group rules)" >> $GITHUB_STEP_SUMMARY
-          echo "- **VPC Monitoring**: 2 findings (flow logs, default SG)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Check the **Security** tab for detailed findings" >> $GITHUB_STEP_SUMMARY
-          echo "2. Review IAM policies to remove wildcard permissions" >> $GITHUB_STEP_SUMMARY
-          echo "3. Consider enabling VPC Flow Logs for monitoring" >> $GITHUB_STEP_SUMMARY
-          echo "4. All EKS-specific security checks passed ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Resources:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Security Tab](../../security)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Checkov Documentation](https://www.checkov.io/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [tfsec Documentation](https://aquasecurity.github.io/tfsec/)" >> $GITHUB_STEP_SUMMARY
 
   # =============================================================================
   # PLAN JOB - Runs on PR and manual dispatch
@@ -215,69 +153,69 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate]
     if: |
-      github.event_name == 'pull_request' || 
+      github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
-    
+
     defaults:
       run:
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
     steps:
-      - name: '📥 Checkout Code'
+      - name: 'Checkout Code'
         uses: actions/checkout@v4
 
-      - name: '🔐 Configure AWS Credentials'
+      - name: 'Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-session-name: terraform-plan-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: '🔧 Setup Terraform'
+      - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: '🚀 Terraform Init'
-        run: terraform init
+      - name: 'Terraform Init'
+        run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
 
-      - name: '🔄 Select Terraform Workspace'
+      - name: 'Select Terraform Workspace'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
-          echo "🔄 Selecting workspace: $ENVIRONMENT"
+          echo "Selecting workspace: $ENVIRONMENT"
           terraform workspace select $ENVIRONMENT || terraform workspace new $ENVIRONMENT
-          echo "✅ Workspace $ENVIRONMENT selected"
+          echo "Workspace $ENVIRONMENT selected"
 
-      - name: '📋 Terraform Plan'
+      - name: 'Terraform Plan'
         id: plan
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
-          echo "📋 Running Terraform plan for $ENVIRONMENT environment..."
+          echo "Running Terraform plan for $ENVIRONMENT environment..."
           terraform plan -var-file=${ENVIRONMENT}.tfvars -out=tfplan -no-color
-          echo "✅ Plan completed successfully"
+          echo "Plan completed successfully"
         continue-on-error: true
 
-      - name: '💬 Comment PR with Plan'
+      - name: 'Comment PR with Plan'
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const output = `#### 📋 Terraform Plan \`${{ steps.plan.outcome }}\`
-            
+            const output = `#### Terraform Plan \`${{ steps.plan.outcome }}\`
+
             <details><summary>Show Plan Output</summary>
-            
+
             \`\`\`terraform
             ${{ steps.plan.outputs.stdout }}
             \`\`\`
-            
+
             </details>
-            
+
             **Environment:** \`${{ github.event.inputs.environment || 'dev' }}\`
             **Action:** \`${{ github.event_name }}\`
             **Actor:** @${{ github.actor }}
             **Workflow:** \`${{ github.workflow }}\``;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -291,74 +229,74 @@ jobs:
   apply:
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: ${{ github.event.inputs.environment }}
       url: https://console.aws.amazon.com/eks/home?region=us-east-1#/clusters
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
-    
+
     defaults:
       run:
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
     steps:
-      - name: '📥 Checkout Code'
+      - name: 'Checkout Code'
         uses: actions/checkout@v4
 
-      - name: '🔐 Configure AWS Credentials'
+      - name: 'Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-session-name: terraform-apply-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: '🔧 Setup Terraform'
+      - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: '🚀 Terraform Init'
-        run: terraform init
+      - name: 'Terraform Init'
+        run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
 
-      - name: '🔄 Select Terraform Workspace'
+      - name: 'Select Terraform Workspace'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          echo "🔄 Selecting workspace: $ENVIRONMENT"
+          echo "Selecting workspace: $ENVIRONMENT"
           terraform workspace select $ENVIRONMENT || terraform workspace new $ENVIRONMENT
-          echo "✅ Workspace $ENVIRONMENT selected"
+          echo "Workspace $ENVIRONMENT selected"
 
-      - name: '📋 Terraform Plan'
+      - name: 'Terraform Plan'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          echo "📋 Creating execution plan for $ENVIRONMENT..."
+          echo "Creating execution plan for $ENVIRONMENT..."
           terraform plan -var-file=${ENVIRONMENT}.tfvars -out=tfplan
-          echo "✅ Plan created successfully"
+          echo "Plan created successfully"
 
-      - name: '🚀 Terraform Apply'
+      - name: 'Terraform Apply'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          echo "🚀 Applying Terraform configuration for $ENVIRONMENT..."
-          
+          echo "Applying Terraform configuration for $ENVIRONMENT..."
+
           if [ "${{ github.event.inputs.auto_approve }}" == "true" ]; then
             terraform apply -auto-approve tfplan
           else
             terraform apply tfplan
           fi
-          
-          echo "✅ Infrastructure deployed successfully!"
 
-      - name: '📊 Generate Deployment Summary'
+          echo "Infrastructure deployed successfully!"
+
+      - name: 'Generate Deployment Summary'
         run: |
-          echo "## 🎉 EKS Cluster Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "## EKS Cluster Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Deployment Details:" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Terraform Version:** ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Deployed by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔧 Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
           echo "1. **Configure kubectl:**" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           terraform output -raw configure_kubectl 2>/dev/null || echo "aws eks --region ${{ env.AWS_REGION }} update-kubeconfig --name \$(terraform output -raw cluster_name)"
@@ -370,7 +308,7 @@ jobs:
           echo "kubectl get pods --all-namespaces" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Useful Links:" >> $GITHUB_STEP_SUMMARY
+          echo "### Useful Links:" >> $GITHUB_STEP_SUMMARY
           echo "- [EKS Console](https://console.aws.amazon.com/eks/home?region=${{ env.AWS_REGION }}#/clusters)" >> $GITHUB_STEP_SUMMARY
           echo "- [VPC Console](https://console.aws.amazon.com/vpc/home?region=${{ env.AWS_REGION }})" >> $GITHUB_STEP_SUMMARY
           echo "- [CloudWatch Logs](https://console.aws.amazon.com/cloudwatch/home?region=${{ env.AWS_REGION }}#logsV2:log-groups)" >> $GITHUB_STEP_SUMMARY
@@ -381,64 +319,64 @@ jobs:
   destroy:
     name: 'Destroy Infrastructure'
     runs-on: ubuntu-latest
-    environment: 
+    environment:
       name: ${{ github.event.inputs.environment }}
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-    
+
     defaults:
       run:
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
     steps:
-      - name: '📥 Checkout Code'
+      - name: 'Checkout Code'
         uses: actions/checkout@v4
 
-      - name: '🔐 Configure AWS Credentials'
+      - name: 'Configure AWS Credentials'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-session-name: terraform-destroy-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: '🔧 Setup Terraform'
+      - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: '🚀 Terraform Init'
-        run: terraform init
+      - name: 'Terraform Init'
+        run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
 
-      - name: '🔄 Select Terraform Workspace'
+      - name: 'Select Terraform Workspace'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          echo "🔄 Selecting workspace: $ENVIRONMENT"
+          echo "Selecting workspace: $ENVIRONMENT"
           terraform workspace select $ENVIRONMENT || terraform workspace new $ENVIRONMENT
-          echo "✅ Workspace $ENVIRONMENT selected"
+          echo "Workspace $ENVIRONMENT selected"
 
-      - name: '🗑️ Terraform Destroy'
+      - name: 'Terraform Destroy'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment }}"
-          echo "🗑️ Destroying infrastructure for $ENVIRONMENT..."
-          
+          echo "Destroying infrastructure for $ENVIRONMENT..."
+
           if [ "${{ github.event.inputs.auto_approve }}" == "true" ]; then
             terraform destroy -var-file=${ENVIRONMENT}.tfvars -auto-approve
           else
             terraform destroy -var-file=${ENVIRONMENT}.tfvars
           fi
-          
-          echo "✅ Infrastructure destroyed successfully!"
 
-      - name: '📊 Generate Destruction Summary'
+          echo "Infrastructure destroyed successfully!"
+
+      - name: 'Generate Destruction Summary'
         run: |
-          echo "## 🗑️ Infrastructure Destroyed!" >> $GITHUB_STEP_SUMMARY
+          echo "## Infrastructure Destroyed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Destruction Details:" >> $GITHUB_STEP_SUMMARY
+          echo "### Destruction Details:" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Destroyed by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Cleanup Complete:" >> $GITHUB_STEP_SUMMARY
+          echo "### Cleanup Complete:" >> $GITHUB_STEP_SUMMARY
           echo "All AWS resources have been successfully removed." >> $GITHUB_STEP_SUMMARY
           echo "State file has been updated to reflect the destruction." >> $GITHUB_STEP_SUMMARY

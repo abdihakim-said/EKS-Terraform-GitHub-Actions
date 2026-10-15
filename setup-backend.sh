@@ -113,69 +113,17 @@ create_dynamodb_table() {
     fi
 }
 
-# Update backend configuration
+# Write the bucket name to eks/backend.hcl (git-ignored) for `terraform init -backend-config=backend.hcl`
 update_backend_config() {
-    print_status "Updating backend configuration..."
-    
-    # Update the backend.tf file with the new bucket name
-    cat > eks/backend.tf << EOF
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.49.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
-  }
-
-  backend "s3" {
-    # INTERVIEW POINT: Remote state management with S3
-    bucket         = "$BUCKET_NAME"
-    region         = "$AWS_REGION"
-    key            = "eks/terraform.tfstate"
-    dynamodb_table = "$DYNAMODB_TABLE"
-    encrypt        = true
-
-    # SECURITY: Additional backend security features
-    skip_region_validation      = false
-    skip_credentials_validation = false
-    skip_metadata_api_check     = false
-  }
-}
-
-provider "aws" {
-  region = var.aws-region
-
-  # INTERVIEW POINT: Consistent tagging strategy across all resources
-  default_tags {
-    tags = {
-      Environment = var.env
-      Project     = "EKS-Infrastructure"
-      ManagedBy   = "Terraform"
-      Owner       = "DevOps-Team"
-      CostCenter  = "Engineering"
-      Repository  = "EKS-Terraform-GitHub-Actions"
-    }
-  }
-}
-EOF
-    
-    print_success "Backend configuration updated"
+    print_status "Writing eks/backend.hcl..."
+    echo "bucket = \"$BUCKET_NAME\"" > eks/backend.hcl
+    print_success "Backend configuration written to eks/backend.hcl"
 }
 
 # Main execution
 main() {
     echo "=========================================="
-    echo "🚀 Terraform Backend Setup"
+    echo "Terraform Backend Setup"
     echo "=========================================="
     echo ""
     
@@ -189,14 +137,14 @@ main() {
     print_success "Backend infrastructure setup complete!"
     echo "=========================================="
     echo ""
-    echo "📋 Summary:"
+    echo "Summary:"
     echo "  • S3 Bucket: $BUCKET_NAME"
     echo "  • DynamoDB Table: $DYNAMODB_TABLE"
     echo "  • Region: $AWS_REGION"
     echo ""
-    echo "🔧 Next steps:"
+    echo "Next steps:"
     echo "  1. cd eks"
-    echo "  2. terraform init"
+    echo "  2. terraform init -backend-config=backend.hcl"
     echo "  3. terraform workspace new dev"
     echo "  4. terraform plan -var-file=dev.tfvars"
     echo ""

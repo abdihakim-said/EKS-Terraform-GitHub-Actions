@@ -4,3 +4,6 @@
 # .tfstate files
 *.tfstate
 *.tfstate.*
+
+# Local backend config (holds the state bucket name)
+eks/backend.hcl

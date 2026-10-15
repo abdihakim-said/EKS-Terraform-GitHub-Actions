@@ -1,14 +1,14 @@
-# 🔐 GitHub OIDC Setup Guide
+# GitHub OIDC Setup Guide
 
 This guide will help you set up GitHub OIDC (OpenID Connect) for secure authentication between GitHub Actions and AWS, eliminating the need for long-lived AWS access keys.
 
-## 📋 Prerequisites
+## Prerequisites
 
 - AWS CLI configured with admin permissions
 - GitHub repository created
 - Basic understanding of IAM roles
 
-## 🚀 Step 1: Create OIDC Identity Provider in AWS
+## Step 1: Create OIDC Identity Provider in AWS
 
 ### Option A: Using AWS CLI (Recommended)
 
@@ -29,7 +29,7 @@ aws iam create-open-id-connect-provider \
 4. Audience: `sts.amazonaws.com`
 5. Click **Add provider**
 
-## 🚀 Step 2: Create IAM Role for GitHub Actions
+## Step 2: Create IAM Role for GitHub Actions
 
 ### Create Trust Policy
 
@@ -94,7 +94,7 @@ aws iam attach-role-policy \
     --policy-arn arn:aws:iam::aws:policy/PowerUserAccess
 ```
 
-## 🚀 Step 3: Configure GitHub Repository Secrets
+## Step 3: Configure GitHub Repository Secrets
 
 1. Go to your GitHub repository
 2. Navigate to **Settings** → **Secrets and variables** → **Actions**
@@ -104,7 +104,7 @@ aws iam attach-role-policy \
 |-------------|-------|
 | `AWS_ROLE_TO_ASSUME` | `arn:aws:iam::YOUR_ACCOUNT_ID:role/GitHubActions-EKS-Role` |
 
-## 🚀 Step 4: Set Up GitHub Environments (Optional but Recommended)
+## Step 4: Set Up GitHub Environments (Optional but Recommended)
 
 ### Create Environments
 
@@ -117,11 +117,11 @@ aws iam attach-role-policy \
 ### Environment Protection Rules for Production
 
 For the `prod` environment:
-- ✅ **Required reviewers**: Add team members
-- ✅ **Deployment branches**: Only `main` branch
-- ✅ **Wait timer**: 5 minutes (optional)
+- **Required reviewers**: Add team members
+- **Deployment branches**: Only `main` branch
+- **Wait timer**: 5 minutes (optional)
 
-## 🚀 Step 5: Test the Setup
+## Step 5: Test the Setup
 
 ### Manual Test
 
@@ -136,12 +136,12 @@ For the `prod` environment:
 ### Expected Result
 
 The workflow should:
-- ✅ Authenticate with AWS using OIDC
-- ✅ Initialize Terraform
-- ✅ Run security scans
-- ✅ Generate a plan for the dev environment
+- Authenticate with AWS using OIDC
+- Initialize Terraform
+- Run security scans
+- Generate a plan for the dev environment
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -160,21 +160,21 @@ The workflow should:
 
 **Solution**: The IAM role needs additional permissions. Consider attaching `PowerUserAccess` for testing (restrict in production).
 
-## 🛡️ Security Best Practices
+## Security Best Practices
 
-### ✅ Do's
+### Do's
 - Use specific repository paths in trust policy
 - Implement environment protection rules
 - Use least privilege principle for IAM policies
 - Regularly rotate and review permissions
 
-### ❌ Don'ts
+### Don'ts
 - Don't use `*` wildcards in trust policies
 - Don't attach `AdministratorAccess` unless absolutely necessary
 - Don't skip environment protection for production
 - Don't commit AWS credentials to code
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [GitHub OIDC Documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 - [AWS IAM OIDC Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
@@ -182,4 +182,4 @@ The workflow should:
 
 ---
 
-🎉 **Once completed, your GitHub Actions will securely authenticate with AWS without storing any long-lived credentials!**
+ **Once completed, your GitHub Actions will securely authenticate with AWS without storing any long-lived credentials!**
